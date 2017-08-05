@@ -20,19 +20,32 @@ void UOpenDoor::BeginPlay()
 {
 	Super::BeginPlay();
     
+    //if(ActorThatOpens != nullptr)
+    //{
+        ActorThatOpens = GetWorld()->GetFirstPlayerController()->GetPawn();
+    	// ...
+    //}
+}
+
+void UOpenDoor::OpenDoor()
+{
+    //UE_LOG(LogTemp, Warning, TEXT("TRIGGERED"));
     AActor* Owner = GetOwner();
     FRotator NewRotation = FRotator(0.f, -90.0f, 0.f);
     Owner->SetActorRotation(NewRotation);
-	// ...
-	
 }
-
 
 // Called every frame
 void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
+    //if(ActorThatOpens != nullptr)
+    //{
+        if(PressurePlate->IsOverlappingActor(ActorThatOpens))
+        {
+            OpenDoor();
+        }
+    //}
 	// ...
 }
 
