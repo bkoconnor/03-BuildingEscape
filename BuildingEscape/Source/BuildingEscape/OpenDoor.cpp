@@ -21,20 +21,14 @@ UOpenDoor::UOpenDoor()
 void UOpenDoor::BeginPlay()
 {
 	Super::BeginPlay();
-    
     Owner = GetOwner();
+    if(!PressurePlate)
+    {
+        UE_LOG(LogTemp, Error, TEXT("%s missing pressure plate"), *GetOwner()->GetName());
+    }
    
 }
 
-void UOpenDoor::OpenDoor()
-{
-    Owner->SetActorRotation(FRotator(0.f, OpenAngle, 0.f));
-}
-
-void UOpenDoor::CloseDoor()
-{
-    Owner->SetActorRotation(FRotator(0.f, 0.f, 0.f));
-}
 
 // Called every frame
 void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -42,18 +36,21 @@ void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompon
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
     //if(ActorThatOpens != nullptr)
     //{
-        if(GetTotalMassOfActorsOnPlate() > 30.f) // TODO make into a parameter
+        if(GetTotalMassOfActorsOnPlate() > TriggerMass)
         {
-            OpenDoor();
-            LastDoorOpenTime = GetWorld()->GetTimeSeconds();
+            OnOpen.Broadcast();
         }
-        else{
-            if(GetWorld()->GetTimeSeconds() - LastDoorOpenTime > DoorCloseDelay)
-            {
+        else
+        {
+            
                 //UE_LOG(LogTemp, Warning, TEXT("CLOSING"));
-                CloseDoor();
-            }
+                OnClose.Broadcast();
         }
+    if(GetMaterialOfActor() != nullptr)
+    {
+        OnOpen.Broadcast();
+        //UE_LOG(LogTemp, Warning, TEXT("opening cabinet"));
+    }
     //}
 	// ...
     
@@ -62,12 +59,41 @@ void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompon
     
 }
 
+// get material of actors in trigger volume (bowl puzzle)
+UMaterialInterface* UOpenDoor::GetMaterialOfActor()
+{
+    TArray<AActor*> OverlappingActors;
+    if(!PressurePlate){return nullptr;}
+    PressurePlate->GetOverlappingActors(OUT OverlappingActors);
+    UMaterialInterface* TestMaterial;
+    bool flag = true;
+    
+    //loop through actors in trigger volumes, set flag to false if one of them does not match the correct bowl
+    for(const auto& Actor : OverlappingActors)
+    {
+        TestMaterial = Actor->FindComponentByClass<UStaticMeshComponent>()->GetMaterial(0);
+        if(TestMaterial != TriggerMaterial)
+        {
+            flag = false;
+        }
+    }
+    if(flag == false)
+    {
+        return nullptr;
+    }
+    else
+    {
+        return TestMaterial;
+    }
+}
+
 float UOpenDoor::GetTotalMassOfActorsOnPlate()
 {
     float TotalMass = 0.f;
     
     //find all overlapping actors
     TArray<AActor*> OverlappingActors;
+    if(!PressurePlate){return TotalMass;}
     PressurePlate->GetOverlappingActors(OUT OverlappingActors);
     
     //iterate through them adding their mass
