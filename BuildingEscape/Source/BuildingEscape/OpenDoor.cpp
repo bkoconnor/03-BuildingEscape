@@ -46,10 +46,13 @@ void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompon
                 //UE_LOG(LogTemp, Warning, TEXT("CLOSING"));
                 OnClose.Broadcast();
         }
-    if(GetMaterialOfActor() != nullptr)
+    if(DoMaterialsMatchContainer() == true)
     {
         OnOpen.Broadcast();
-        //UE_LOG(LogTemp, Warning, TEXT("opening cabinet"));
+    }
+    else
+    {
+        OnClose.Broadcast();
     }
     //}
 	// ...
@@ -60,31 +63,27 @@ void UOpenDoor::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompon
 }
 
 // get material of actors in trigger volume (bowl puzzle)
-UMaterialInterface* UOpenDoor::GetMaterialOfActor()
+bool UOpenDoor::DoMaterialsMatchContainer()
 {
     TArray<AActor*> OverlappingActors;
-    if(!PressurePlate){return nullptr;}
+    if(!PressurePlate){return false;}
     PressurePlate->GetOverlappingActors(OUT OverlappingActors);
     UMaterialInterface* TestMaterial;
-    bool flag = true;
+    //bool flag;
     
     //loop through actors in trigger volumes, set flag to false if one of them does not match the correct bowl
+    if(OverlappingActors.Num() == 0){return false;} // if there are no actors in bowls, do not test and return false
     for(const auto& Actor : OverlappingActors)
     {
         TestMaterial = Actor->FindComponentByClass<UStaticMeshComponent>()->GetMaterial(0);
+        //if any blocks are not the right material, return false
         if(TestMaterial != TriggerMaterial)
         {
-            flag = false;
+            return false;
         }
+        return true;
     }
-    if(flag == false)
-    {
-        return nullptr;
-    }
-    else
-    {
-        return TestMaterial;
-    }
+    return false;
 }
 
 float UOpenDoor::GetTotalMassOfActorsOnPlate()

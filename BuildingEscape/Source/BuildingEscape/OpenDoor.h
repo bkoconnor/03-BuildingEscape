@@ -48,6 +48,6 @@ private:
     
     //FORCEINLINE class UStaticMeshComponent* GetMesh() const {return PaintBlobMesh;}
     
-    UMaterialInterface* GetMaterialOfActor();
+    bool DoMaterialsMatchContainer();
 	
 };
